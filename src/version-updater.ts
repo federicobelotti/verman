@@ -1,4 +1,3 @@
-// src/version-updater.ts
 import semver from "semver";
 import { UpdateType } from "./types";
 
@@ -8,9 +7,7 @@ export function getNewVersion(
 ): string {
   const newVersion = semver.inc(currentVersion, type);
   if (!newVersion) {
-    throw new Error(
-      `Impossibile incrementare la versione non valida: ${currentVersion}`
-    );
+    throw new Error(`Can't update invalid version: ${currentVersion}`);
   }
   return newVersion;
 }

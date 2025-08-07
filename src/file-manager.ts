@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const CONFIG_FILE_NAME = ".vermanrc.json";
-const DEFAULT_FILES = ["package.json", "package-lock.json"];
+const DEFAULT_FILES = ["package.json"];
 
 /**
  * Defines the structure of a version update target.
@@ -31,7 +31,7 @@ function getValueByPath(obj: any, path: string): any {
       if (
         current &&
         typeof current === "object" &&
-        Object.prototype.hasOwnProperty.call(current, key)
+        Object.hasOwnProperty.call(current, key)
       ) {
         current = current[key];
         i = j;
@@ -51,7 +51,7 @@ function getValueByPath(obj: any, path: string): any {
  * Sets a value in an object using a dot notation path,
  * correctly handling keys that contain dots.
  * @param obj The object to modify.
- * @param path The property path (e.g., "sap.app.version").
+ * @param path The property path (e.g., "metadata.app.version").
  * @param value The new value to set.
  */
 function setValueByPath(obj: any, path: string, value: any): void {
@@ -66,7 +66,7 @@ function setValueByPath(obj: any, path: string, value: any): void {
     if (
       parent &&
       typeof parent === "object" &&
-      Object.prototype.hasOwnProperty.call(parent, finalKey)
+      Object.hasOwnProperty.call(parent, finalKey)
     ) {
       parent[finalKey] = value;
       return;
@@ -100,7 +100,7 @@ export async function findVersionFiles(): Promise<VersionTarget[]> {
     }
   } catch (error) {
     console.log(
-      `ℹ️ No ${CONFIG_FILE_NAME} found. Falling back to default files.`
+      `ℹ️  No ${CONFIG_FILE_NAME} found. Falling back to default files. \n`
     );
   }
 
