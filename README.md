@@ -22,7 +22,7 @@ To use `verman` locally, you need to clone the repository, build the project and
 1.  **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/federicobelotti/verman](https://github.com/federicobelotti/verman)
+    git clone https://github.com/federicobelotti/verman
     ```
 
 2.  **Build the package:**
