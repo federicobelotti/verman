@@ -7,7 +7,7 @@ import { ALL_UPDATE_TYPES, UpdateType } from "./types";
 import {
   findVersionFiles,
   getCurrentVersion,
-  updateVersionInFiles,
+  updateVersionInFile,
   VersionTarget,
 } from "./file-manager";
 import { getNewVersion } from "./version-updater";
@@ -24,13 +24,11 @@ async function run() {
       .action(async (type: UpdateType | undefined) => {
         const allFoundFiles = await findVersionFiles();
         if (allFoundFiles.length === 0) {
-          console.error(
-            "❌ Error: No version files found (e.g., package.json). Aborting."
-          );
+          console.error("❌ Error: No version files found. Aborting.");
           return;
         }
 
-        // Group files by their parent directory for a cleaner display
+        // Group files for cleaner selection prompt
         const groupedByDir = new Map<string, VersionTarget[]>();
         for (const target of allFoundFiles) {
           const relativePath = path.relative(process.cwd(), target.filePath);
@@ -40,13 +38,12 @@ async function run() {
           }
           groupedByDir.get(dirName)!.push(target);
         }
-
         const choices = [];
         for (const [dir, targets] of groupedByDir.entries()) {
-          choices.push(new inquirer.Separator(`\n 📂 ${dir}`)); // Directory header
+          choices.push(new inquirer.Separator(`\n 📂 ${dir}`));
           for (const target of targets) {
             choices.push({
-              name: `  ${path.basename(target.filePath)}`, // Show only the filename
+              name: `  ${path.basename(target.filePath)}`,
               value: target,
               checked: false,
             });
@@ -62,13 +59,9 @@ async function run() {
             name: "filesToUpdate",
             message: "Select the files you want to update:",
             choices: choices,
-            loop: false, // Disables infinite scrolling
-            validate: (answer) => {
-              if (answer.length < 1) {
-                return "You must choose at least one file.";
-              }
-              return true;
-            },
+            loop: false,
+            validate: (answer) =>
+              answer.length < 1 ? "You must choose at least one file." : true,
           },
         ]);
 
@@ -77,16 +70,14 @@ async function run() {
           return;
         }
 
-        const mainVersionFile = filesToUpdate[0];
-        const currentVersion = await getCurrentVersion(mainVersionFile);
-
+        // Determine the update type
         let updateType = type;
         if (!updateType) {
           const answers = await inquirer.prompt([
             {
               type: "list",
               name: "updateType",
-              message: `The current version is ${currentVersion}. Select an update type:`,
+              message: `Select an update type to apply to all selected files:`,
               choices: ALL_UPDATE_TYPES,
             },
           ]);
@@ -94,21 +85,32 @@ async function run() {
         }
 
         if (!ALL_UPDATE_TYPES.includes(updateType!)) {
-          console.error(
-            `❌ Error: Invalid update type "${updateType}". Please use one of: ${ALL_UPDATE_TYPES.join(
-              ", "
-            )}.`
-          );
+          console.error(`❌ Error: Invalid update type "${updateType}".`);
           return;
         }
 
-        const newVersion = getNewVersion(currentVersion, updateType!);
-        console.log(
-          `🚀 Bumping version from v${currentVersion} to v${newVersion}...`
-        );
+        console.log(`🚀 Bumping versions with update type: "${updateType}"...`);
 
-        // Pass only the user-selected files to the update function
-        await updateVersionInFiles(filesToUpdate, newVersion);
+        // --- CORE LOGIC CHANGE ---
+        // Loop through each selected file and update it individually
+        for (const target of filesToUpdate) {
+          try {
+            const currentVersion = await getCurrentVersion(target);
+            const newVersion = getNewVersion(currentVersion, updateType!);
+            await updateVersionInFile(target, newVersion);
+            console.log(
+              `📝 Updated ${path.basename(
+                target.filePath
+              )} from v${currentVersion} to v${newVersion}`
+            );
+          } catch (error: any) {
+            console.error(
+              `❌ Failed to update ${path.basename(target.filePath)}: ${
+                error.message
+              }`
+            );
+          }
+        }
 
         console.log("\n🎉 Update complete!");
       });
