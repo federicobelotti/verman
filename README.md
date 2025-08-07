@@ -17,7 +17,7 @@ A smart, interactive version management tool for your Node.js projects.
 
 > Installation via package manager is a WIP.
 
-To use `verman` locally, you need to clone the repository and link it using `npm`.
+To use `verman` locally, you need to clone the repository, build the project and link it using `npm`.
 
 1.  **Clone the repository:**
 
@@ -25,10 +25,11 @@ To use `verman` locally, you need to clone the repository and link it using `npm
     git clone [https://github.com/federicobelotti/verman](https://github.com/federicobelotti/verman)
     ```
 
-2.  **Link the package:**
-    Navigate into the cloned directory and run `npm link`. This makes the `verman` command available globally on your system, pointing to your local source code.
+2.  **Build the package:**
+    Navigate into the cloned directory and run `npm run build` (or use the package manager of your choice) to build from the source files.
+3.  **Link the package:**
+    Run `npm link` in the cloned repository. This makes the `verman` command available globally on your system, pointing to your local source code.
     ```bash
-    cd verman
     npm link
     ```
 
