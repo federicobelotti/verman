@@ -3,6 +3,7 @@
 import { program } from "commander";
 import inquirer from "inquirer";
 import path from "path";
+import semver from "semver"; // Import semver for validation
 import { ALL_UPDATE_TYPES, UpdateType } from "./types";
 import {
   findVersionFiles,
@@ -70,45 +71,95 @@ async function run() {
           return;
         }
 
-        // Determine the update type
-        let updateType = type;
-        if (!updateType) {
-          const answers = await inquirer.prompt([
+        const { updateMethod } = await inquirer.prompt([
+          {
+            type: "list",
+            name: "updateMethod",
+            message: "How do you want to set the new version?",
+            choices: [
+              { name: "Bump version (patch, minor, major)", value: "bump" },
+              { name: "Set a specific version", value: "specific" },
+            ],
+          },
+        ]);
+
+        if (updateMethod === "bump") {
+          // --- BUMP LOGIC (existing logic) ---
+          let updateType = type;
+          if (!updateType) {
+            const answers = await inquirer.prompt([
+              {
+                type: "list",
+                name: "updateType",
+                message: `Select an update type to apply to all selected files:`,
+                choices: ALL_UPDATE_TYPES,
+              },
+            ]);
+            updateType = answers.updateType;
+          }
+
+          if (!ALL_UPDATE_TYPES.includes(updateType!)) {
+            console.error(`❌ Error: Invalid update type "${updateType}".`);
+            return;
+          }
+
+          console.log(
+            `🚀 Bumping versions with update type: "${updateType}"...`
+          );
+
+          for (const target of filesToUpdate) {
+            try {
+              const currentVersion = await getCurrentVersion(target);
+              const newVersion = getNewVersion(currentVersion, updateType!);
+              await updateVersionInFile(target, newVersion);
+              console.log(
+                `📝 Updated ${path.basename(
+                  target.filePath
+                )} from v${currentVersion} to v${newVersion}`
+              );
+            } catch (error: any) {
+              console.error(
+                `❌ Failed to update ${path.basename(target.filePath)}: ${
+                  error.message
+                }`
+              );
+            }
+          }
+        } else {
+          // --- SPECIFIC VERSION LOGIC (new logic) ---
+          const { specificVersion } = await inquirer.prompt([
             {
-              type: "list",
-              name: "updateType",
-              message: `Select an update type to apply to all selected files:`,
-              choices: ALL_UPDATE_TYPES,
+              type: "input",
+              name: "specificVersion",
+              message: "Enter the new version number:",
+              validate: (input: string) => {
+                if (semver.valid(input)) {
+                  return true;
+                }
+                return "Please enter a valid semantic version (e.g., 1.2.3).";
+              },
             },
           ]);
-          updateType = answers.updateType;
-        }
 
-        if (!ALL_UPDATE_TYPES.includes(updateType!)) {
-          console.error(`❌ Error: Invalid update type "${updateType}".`);
-          return;
-        }
-
-        console.log(`🚀 Bumping versions with update type: "${updateType}"...`);
-
-        // --- CORE LOGIC CHANGE ---
-        // Loop through each selected file and update it individually
-        for (const target of filesToUpdate) {
-          try {
-            const currentVersion = await getCurrentVersion(target);
-            const newVersion = getNewVersion(currentVersion, updateType!);
-            await updateVersionInFile(target, newVersion);
-            console.log(
-              `📝 Updated ${path.basename(
-                target.filePath
-              )} from v${currentVersion} to v${newVersion}`
-            );
-          } catch (error: any) {
-            console.error(
-              `❌ Failed to update ${path.basename(target.filePath)}: ${
-                error.message
-              }`
-            );
+          console.log(
+            `🚀 Forcing version to v${specificVersion} on all selected files...`
+          );
+          for (const target of filesToUpdate) {
+            try {
+              const currentVersion = await getCurrentVersion(target);
+              await updateVersionInFile(target, specificVersion);
+              console.log(
+                `📝 Set version of ${path.basename(
+                  target.filePath
+                )} from v${currentVersion} to v${specificVersion}`
+              );
+            } catch (error: any) {
+              console.error(
+                `❌ Failed to update ${path.basename(target.filePath)}: ${
+                  error.message
+                }`
+              );
+            }
           }
         }
 
