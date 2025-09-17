@@ -107,11 +107,6 @@ export async function getCurrentVersion(
   return version;
 }
 
-/**
- * Updates the version in a single file target.
- * @param target The file target to update.
- * @param newVersion The new version string to apply.
- */
 export async function updateVersionInFile(
   target: VersionTarget,
   newVersion: string
